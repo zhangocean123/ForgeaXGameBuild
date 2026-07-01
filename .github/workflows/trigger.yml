@@ -1,4 +1,4 @@
-name: Trigger ForgeaX Build
+name: Trigger ForgeaX Build / Release
 
 on:
   issues:
@@ -8,20 +8,43 @@ permissions:
   issues: write
 
 jobs:
-  trigger:
+  trigger-build:
     runs-on: ubuntu-latest
     if: github.event.issue.title == 'build'
     steps:
-      - name: Trigger private repo build
+      - name: Trigger desktop build only
         run: |
-          curl -X POST \
+          curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.PRIVATE_REPO_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "User-Agent: ForgeaX-Trigger" \
             -H "Content-Type: application/json" \
             -d '{"event_type":"build"}' \
             https://api.github.com/repos/ForgeaXGame/forgeax-studio/dispatches
+      - name: Close trigger issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
 
+  trigger-release:
+    runs-on: ubuntu-latest
+    if: github.event.issue.title == 'release'
+    steps:
+      - name: Trigger full release pipeline
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.PRIVATE_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "User-Agent: ForgeaX-Trigger" \
+            -H "Content-Type: application/json" \
+            -d '{"event_type":"release"}' \
+            https://api.github.com/repos/ForgeaXGame/forgeax-studio/dispatches
       - name: Close trigger issue
         uses: actions/github-script@v7
         with:
